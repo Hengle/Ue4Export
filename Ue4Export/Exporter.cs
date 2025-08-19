@@ -74,7 +74,7 @@ namespace Ue4Export
 		{
 			bool success = true;
 
-			using (var provider = new DefaultFileProvider(mOptions.AssetsDirectory, mOptions.AssetSearchOption))
+			using (var provider = new DefaultFileProvider(new DirectoryInfo(mOptions.AssetsDirectory), mOptions.AssetSearchOption, null, null))
 			{
 				provider.Versions.Game = mOptions.EngineVersion;
 				provider.Versions.Ver = mOptions.EngineVersion.GetVersion();
@@ -91,7 +91,9 @@ namespace Ue4Export
 					provider.SubmitKey(vfsReader.EncryptionKeyGuid, mAesKey);
 				}
 
-				provider.LoadLocalization(ELanguage.English);
+				provider.PostMount();
+
+				provider.ChangeCulture(provider.GetLanguageCode(ELanguage.English));
 
 				ExportFormats formats = ExportFormats.Auto;
 				mLogger?.Log(LogLevel.Important, "Export format is now [Auto]");
@@ -378,7 +380,7 @@ namespace Ue4Export
 				case "uasset":
 				case "umap":
 					{
-						var exports = provider.LoadAllObjects(assetPath);
+						IEnumerable<UObject> exports = provider.LoadPackage(assetPath).GetExports();
 
 						JsonSerializer serializer = new();
 						serializer.Formatting = mJsonSettings.Formatting;
@@ -465,19 +467,19 @@ namespace Ue4Export
 				case "":
 				case "uasset":
 					{
-						IEnumerable<UObject> objects = provider.LoadAllObjects(assetPath);
+						IEnumerable<UObject> exports = provider.LoadPackage(assetPath).GetExports();
 
 						bool textureFound = false;
 						bool success = true;
 
-						foreach (UObject obj in objects)
+						foreach (UObject obj in exports)
 						{
 							UTexture2D? texture = obj as UTexture2D;
 							if (texture == null) continue;
 
 							textureFound = true;
 
-							SKBitmap? bitmap = texture.Decode();
+							SKBitmap? bitmap = texture.Decode()?.ToSkBitmap();
 							if (bitmap == null)
 							{
 								mLogger?.Log(LogLevel.Warning, $"{texture.GetPathName()} - Failed to decode texture.");

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using CUE4Parse.Compression;
+using System.Reflection;
 
 namespace Ue4Export
 {
@@ -76,8 +77,9 @@ namespace Ue4Export
 				}
 			}
 
-			ZlibHelper.Initialize(ZlibHelper.DLL_NAME);
-			OodleHelper.Initialize(OodleHelper.OODLE_DLL_NAME);
+			string assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+			ZlibHelper.Initialize(Path.Combine(assemblyDir, ZlibHelper.DLL_NAME));
+			OodleHelper.Initialize(Path.Combine(assemblyDir, OodleHelper.OODLE_DLL_NAME));
 
 			logger.Log(LogLevel.Important, "Exporting assets...");
 			Exporter exporter = new Exporter(options, logger);
